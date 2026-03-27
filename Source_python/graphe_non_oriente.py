@@ -111,15 +111,14 @@ class GrapheValueNonOriente:
     Paramètres :
         ens_sommets : ensemble de sommets à partir duquel construire le sous-graphe.
         """
-        liste_sommets = sorted(list(ens_sommets))
-        taille_sous_graphe = len(liste_sommets)
-        nouvelle_matrice = np.zeros((taille_sous_graphe, taille_sous_graphe))
-        for i in range(taille_sous_graphe):
-            for j in range(taille_sous_graphe):
-                u = liste_sommets[i]
-                v = liste_sommets[j]
-                nouvelle_matrice[i][j] = self.matrice[u][v]
-        return GrapheValueNonOriente(nouvelle_matrice)
+        indices = sorted(list(ens_sommets))
+        nouvellematrice = self.matrice[indices][:, indices]
+        nouveauxnoms = {}
+        for nouveaunum, anciennum in enumerate(indices):
+            nomdusommet = self.noms_sommets[anciennum]
+            nouveauxnoms[nouveaunum] = nomdusommet
+        return GrapheValueNonOriente(nouvellematrice, nouveauxnoms)
+
 
     def calcule_cc(self):
         """
@@ -129,7 +128,6 @@ class GrapheValueNonOriente:
         Retour:
             liste des ensembles de sommets correspondant à des composantes connexes.
         """
-        #TODO : à compléter
         sommetutilise = set()
         cc = []
         for sommet in range(self.nb_sommets()):
@@ -138,12 +136,12 @@ class GrapheValueNonOriente:
                 stack=[sommet]
                 sommetutilise.add(sommet)
 
-                while stack: #Tant qu'il rest des sommets non visité on boucle
+                while stack: #Tant qu'il reste des sommets non visité on boucle
                     scourrant=stack.pop()
                     composanteconnexe.add(scourrant)
 
                     for voisin,valeur in enumerate(self.matrice[scourrant]):
-                        if voisin not in sommetutilise:
+                        if valeur != math.inf and voisin not in sommetutilise:
                             sommetutilise.add(voisin)
                             stack.append(voisin)
                 cc.append(composanteconnexe)
@@ -202,21 +200,23 @@ if __name__ == "__main__":
                    [8,7,1.5,math.inf],
                   ])
     g2 = GrapheValueNonOriente(m2, {0:"Teddy", 1:"Lisa", 2:"Mohamed", 3:"Levi"})
-    s= set()
-    print("")
-    print("\nGraphe g2:\n", g2)
-    print("\t degré(0) :", g2.degre_sommet(0))
-    print("\t degré(1) :", g2.degre_sommet(1))
-    print("\t degrés des sommets :", g2.degres_sommets())
-    print("\t nb sommets :", g2.nb_sommets())
-    print("\t nb arêtes :", g2.nb_aretes())
-    print("\nEcriture du graphe dans un fichier")
-    g2.ecrit_dans_fichier_dot('graphe2.dot')
-    ens_sommets = set([0, 1,2]) 
-    ssGraphe = g2.construit_sous_graphe_induit(ens_sommets)
-    print(ssGraphe)
-    ens_sommets2 = set([0,2])
-    ssGraphe = g2.construit_sous_graphe_induit(ens_sommets2)
-    print("\nSous graphe induit :")
-    print(ssGraphe)
-    print(g2.calcule_cc())
+    print("\nSous graphe induit")
+    selection = {0, 2}  # 0 = Teddy et 2 = Mohamed
+    sous_graphe = g2.construit_sous_graphe_induit(selection)
+
+    print("Nouveau dictionnaire de noms :", sous_graphe.noms_sommets)
+    print("Matrice induite :\n", sous_graphe.matrice)
+    print(f"Poids entre Teddy et Mohamed : {sous_graphe.matrice[0][1]}") #Dist = 2.5
+    print("\nGraphe non connexe")
+    # 0-1 sont liés, 2-3 sont liés, mais aucune liaison entre les deux groupes
+    m3 = np.array([
+        [math.inf, 5, math.inf, math.inf],
+        [5, math.inf, math.inf, math.inf],
+        [math.inf, math.inf, math.inf, 10],
+        [math.inf, math.inf, 10, math.inf]
+    ])
+    g3 = GrapheValueNonOriente(m3, {0: "A", 1: "B", 2: "C", 3: "D"})
+
+    ccs = g3.calcule_cc()
+    print(f"Composantes connexes trouvées : {ccs}")
+    print(f"Est connexe ? {g3.est_connexe()}")  #False
